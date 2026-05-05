@@ -5,23 +5,26 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
-    "express": "^4.18.0",
-    "prisma": "^5.0.0",
-    "@prisma/client": "^5.0.0",
-    "@supabase/supabase-js": "latest",
-    "redis": "^4.6.0",
-    "telegraf": "^4.15.0",
-    "whatsapp-web.js": "^1.23.0",
-    "openai": "^4.28.0",
-    "midtrans-client": "^2.0.0",
-    "dotenv": "^16.0.0"
+    "@prisma/client": "^5.22.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "@upstash/redis": "^1.34.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "midtrans-client": "^1.4.2",
+    "openai": "^4.73.0",
+    "telegraf": "^4.16.3",
+    "whatsapp-web.js": "^1.26.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "tsx": "^4.0.0",
-    "@types/express": "^4.17.0"
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.0",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
   }
 }
