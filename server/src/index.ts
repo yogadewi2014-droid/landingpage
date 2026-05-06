@@ -106,6 +106,9 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Server error:', err.message);
   res.status(500).json({ error: 'Terjadi kesalahan pada server' });
 });
+app.get('/health', (_req, res) => {
+  res.status(200).send('OK');
+});
 
 // ─── Jalankan Server ────────────────────────────────────
 app.listen(PORT, () => {
