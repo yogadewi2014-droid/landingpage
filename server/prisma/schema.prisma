@@ -5,12 +5,13 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
   id        String   @id @default(cuid())
   username  String?  @unique
-  plan      String   @default("free") // free, payg, go, pro
+  plan      String   @default("free")
   credits   Int      @default(0)
   pages     Page[]
   media     Media[]
@@ -21,7 +22,7 @@ model Page {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  template  String   @default("office/simple")
+  template  String
   slug      String   @unique
   data      Json
   published Boolean  @default(false)
