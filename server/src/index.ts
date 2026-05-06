@@ -1,6 +1,38 @@
-import prisma from './lib/prisma';
-import { renderTemplate } from './services/template-engine/renderer';
+import express, { Request, Response, NextFunction } from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import prisma from './lib/prisma';                        // ← Prisma client
+import { renderTemplate } from './services/template-engine/renderer'; // ← Template engine
 
+// ─── Konfigurasi Awal ───────────────────────────────────
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// ─── Middleware ─────────────────────────────────────────
+app.use(cors());
+app.use(express.json());
+
+app.use((req, _res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+  next();
+});
+
+// ─── ROUTE: Cek Kesehatan Server ───────────────────────
+app.get('/', (_req: Request, res: Response) => {
+  res.json({
+    message: 'CBLZ Landing Page Builder API 🚀',
+    version: '0.1.0',
+    status: 'online',
+  });
+});
+
+app.get('/api/hello', (_req: Request, res: Response) => {
+  res.json({ hello: 'world' });
+});
+
+// ─── ROUTE: Generate Landing Page (NYATA) ──────────────
 app.post('/api/pages/generate', async (req: Request, res: Response) => {
   try {
     const {
@@ -14,23 +46,26 @@ app.post('/api/pages/generate', async (req: Request, res: Response) => {
       image,
     } = req.body;
 
+    // Validasi sederhana
     if (!title && !headline) {
       return res.status(400).json({ error: 'Judul atau headline wajib diisi' });
     }
 
-    const slug = (title || headline)
+    // Buat slug dari judul
+    const baseSlug = (title || headline)
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '') + '-' + Date.now();
+      .replace(/^-|-$/g, '');
+    const slug = `${baseSlug}-${Date.now()}`;
 
-    // Data yang akan dimasukkan ke template
+    // Data halaman
     const pageData = {
       headline: headline || title,
       subheadline: subheadline || 'Solusi terbaik untuk Anda',
       cta: cta || 'Hubungi Sekarang',
       features: features || ['Mudah', 'Cepat', 'Profesional'],
       image: image || 'https://via.placeholder.com/400x300',
-      watermark: true, // nanti diubah berdasarkan paket user
+      watermark: true, // nanti diatur berdasarkan paket user
     };
 
     // Simpan ke database
@@ -44,19 +79,36 @@ app.post('/api/pages/generate', async (req: Request, res: Response) => {
       },
     });
 
-    // Render HTML (opsional, bisa disimpan ke Supabase Storage nanti)
+    // Render HTML menggunakan template engine
     const html = renderTemplate(template, pageData);
 
-    // Untuk saat ini, kita hanya kirim link preview (nanti frontend akan render dengan fetch HTML terpisah)
+    // Respons sukses
     res.status(201).json({
       success: true,
       pageId: page.id,
       slug: slug,
       url: `${process.env.FRONTEND_URL || 'https://cblzai.com'}/p/${slug}`,
-      previewHtml: html.substring(0, 200) + '...', // hanya potongan untuk preview
+      previewHtml: html.substring(0, 200) + '...',
     });
   } catch (error) {
     console.error('Generate error:', error);
     res.status(500).json({ error: 'Gagal membuat landing page' });
   }
+});
+
+// ─── ROUTE: Login / Auth Placeholder ───────────────────
+app.post('/api/auth/login', async (req: Request, res: Response) => {
+  res.json({ message: 'Login endpoint (belum diimplementasikan)' });
+});
+
+// ─── Middleware Error Global ────────────────────────────
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('Server error:', err.message);
+  res.status(500).json({ error: 'Terjadi kesalahan pada server' });
+});
+
+// ─── Jalankan Server ────────────────────────────────────
+app.listen(PORT, () => {
+  console.log(`✅ Server berjalan di port ${PORT}`);
+  console.log(`🌐 Akses: http://localhost:${PORT}/`);
 });
