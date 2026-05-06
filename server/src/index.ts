@@ -109,6 +109,31 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 app.get('/health', (_req, res) => {
   res.status(200).send('OK');
 });
+app.get('/api/pages/:slug/html', async (req: Request, res: Response) => {
+  try {
+    const { slug } = req.params;
+    const page = await prisma.page.findUnique({ where: { slug } });
+    if (!page) return res.status(404).json({ error: 'Halaman tidak ditemukan' });
+
+    // Data sudah disimpan di kolom `data`, kita oper sebagai object
+    const html = renderTemplate(page.template, page.data as any);
+    res.json({ html, slug: page.slug });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Gagal mengambil halaman' });
+  }
+});
+
+// Tambahkan juga endpoint GET /api/pages (untuk daftar)
+app.get('/api/pages', async (req: Request, res: Response) => {
+  const { userId } = req.query;
+  const pages = await prisma.page.findMany({
+    where: { userId: userId as string },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json({ pages });
+});
+
 
 // ─── Jalankan Server ────────────────────────────────────
 app.listen(PORT, () => {
