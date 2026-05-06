@@ -1,0 +1,10 @@
+[build]
+  base = "web/"
+  publish = ".next"
+  command = "pnpm build"
+
+[build.environment]
+  NPM_FLAGS = "--prefix=$base"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
