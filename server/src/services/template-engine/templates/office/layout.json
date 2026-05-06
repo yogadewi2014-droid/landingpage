@@ -1,0 +1,25 @@
+{
+  "sections": [
+    {
+      "type": "hero",
+      "props": {
+        "defaultHeadline": "Judul Bisnis Anda",
+        "defaultSubheadline": "Deskripsi singkat tentang layanan Anda",
+        "defaultImage": "https://via.placeholder.com/400x300"
+      }
+    },
+    {
+      "type": "features",
+      "props": {
+        "defaultItems": ["Fitur 1", "Fitur 2", "Fitur 3"]
+      }
+    },
+    {
+      "type": "cta",
+      "props": {
+        "defaultText": "Hubungi Sekarang",
+        "defaultLink": "https://wa.me/6281234567890"
+      }
+    }
+  ]
+}
