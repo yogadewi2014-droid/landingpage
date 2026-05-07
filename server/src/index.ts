@@ -90,12 +90,18 @@ app.post('/api/pages/generate', async (req: Request, res: Response) => {
   }
 });
 
-// ─── ROUTE: Ambil Daftar Landing Page (TYPE ERROR FIXED PERMANENTLY) ──
+// ─── ROUTE: Ambil Daftar Landing Page (✅ TYPE ERROR FIXED) ──
 app.get('/api/pages', async (req: Request, res: Response) => {
   try {
-    const raw = req.query.userId;
-    // Ambil nilai pertama jika array, jika bukan string kosongkan
-    const userId: string | undefined = Array.isArray(raw) ? raw[0] : (typeof raw === 'string' ? raw : undefined);
+    // Ambil nilai mentah, abaikan keberatan TypeScript dengan as any
+    const raw: any = (req.query as any).userId;
+    let userId: string | undefined = undefined;
+
+    if (typeof raw === 'string') {
+      userId = raw;
+    } else if (Array.isArray(raw) && raw.length > 0 && typeof raw[0] === 'string') {
+      userId = raw[0];
+    }
 
     const pages = await prisma.page.findMany({
       where: { userId },
