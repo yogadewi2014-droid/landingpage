@@ -1,35 +1,33 @@
-import { modernTemplate } from './templates/modern';
-import { foodTemplate } from './templates/food-beverage';
-import { productTemplate } from './templates/product';
-import { affiliateTemplate } from './templates/affiliate';
-import { personalTemplate } from './templates/personal-branding';
-import { officeTemplate } from './templates/office';
-import { restaurantTemplate } from './templates/restaurant';
+import type { LandingPageData } from "./templates/modern";
+import { render as modern } from "./templates/modern";
+import { render as food } from "./templates/food";
+import { render as product } from "./templates/product";
+import { render as affiliate } from "./templates/affiliate";
+import { render as personal } from "./templates/personal";
+import { render as office } from "./templates/office";
+import { render as restaurant } from "./templates/restaurant";
+import { render as business } from "./templates/business";
+import { render as tech } from "./templates/tech";
 
-export function renderTemplate(
+type RenderFunction = (data: LandingPageData) => Promise<string>;
+
+const templates: Record<string, RenderFunction> = {
+  modern,
+  food,
+  "food-n-drink": food,
+  product,
+  affiliate,
+  personal,
+  office,
+  restaurant,
+  business,
+  tech,
+};
+
+export async function renderTemplate(
   template: string,
-  data: any
-) {
-  switch (template) {
-    case 'food':
-      return foodTemplate(data);
-
-    case 'product':
-      return productTemplate(data);
-
-    case 'affiliate':
-      return affiliateTemplate(data);
-
-    case 'personal':
-      return personalTemplate(data);
-
-    case 'office':
-      return officeTemplate(data);
-
-    case 'restaurant':
-      return restaurantTemplate(data);
-
-    default:
-      return modernTemplate(data);
-  }
+  data: LandingPageData
+): Promise<string> {
+  const renderFn = templates[template] || templates.office;
+  return await renderFn(data);
 }
