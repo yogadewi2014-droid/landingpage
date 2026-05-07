@@ -5,7 +5,7 @@ type Testimonial = {
   rating?: number;
 };
 
-type LandingPageData = {
+export type LandingPageData = {
   headline?: string;
   subheadline?: string;
   image?: string;
@@ -24,7 +24,6 @@ type LandingPageData = {
 const DEFAULT_IMAGE =
   "https://res.cloudinary.com/demo/image/upload/v1712345678/templates/modern/fallback.jpg";
 
-// ---------- Utility: Escape HTML ----------
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
@@ -34,47 +33,38 @@ function escapeHtml(text: string): string {
     .replace(/'/g, "&#039;");
 }
 
-// ---------- Cloudinary Optimization ----------
 function optimizeCloudinary(url: string, width = 900): string {
   if (!url) return DEFAULT_IMAGE;
   if (url.includes("cloudinary.com")) {
-    return url.replace("/upload/", `/upload/f_auto,q_auto,w_${width},c_limit/`);
+    return url.replace(
+      "/upload/",
+      `/upload/f_auto,q_auto,w_${width},c_limit/`
+    );
   }
   return url;
 }
 
-// ---------- PEXELS API ----------
 async function searchPexels(keyword: string): Promise<string | null> {
   const apiKey = process.env.PEXELS_API_KEY;
   if (!apiKey) {
     console.warn("PEXELS_API_KEY tidak disetel – melewati Pexels.");
     return null;
   }
-
   try {
     const res = await fetch(
       `https://api.pexels.com/v1/search?query=${encodeURIComponent(
         keyword
       )}&per_page=1`,
-      {
-        headers: { Authorization: apiKey },
-      }
+      { headers: { Authorization: apiKey } }
     );
-    const data = await res.json();
+    const data = (await res.json()) as {
+      photos?: { src: { large2x: string } }[];
+    };
     return data?.photos?.[0]?.src?.large2x || null;
   } catch (err) {
     console.error("Pexels search error:", err);
     return null;
   }
-}
-
-// ---------- WIKIMEDIA FALLBACK ----------
-interface WikimediaImageInfo {
-  url: string;
-}
-
-interface WikimediaPage {
-  imageinfo?: WikimediaImageInfo[];
 }
 
 async function searchWikimedia(keyword: string): Promise<string | null> {
@@ -84,8 +74,15 @@ async function searchWikimedia(keyword: string): Promise<string | null> {
         keyword
       )}&gsrlimit=1&prop=imageinfo&iiprop=url&format=json&origin=*`
     );
-    const data = await res.json();
-    const pages = data?.query?.pages as Record<string, WikimediaPage> | undefined;
+    const data = (await res.json()) as {
+      query?: {
+        pages?: Record<
+          string,
+          { imageinfo?: { url: string }[] }
+        >;
+      };
+    };
+    const pages = data?.query?.pages;
     if (!pages) return null;
     const first = Object.values(pages)[0];
     return first?.imageinfo?.[0]?.url || null;
@@ -95,16 +92,13 @@ async function searchWikimedia(keyword: string): Promise<string | null> {
   }
 }
 
-// ---------- CLOUDINARY UPLOAD ----------
 async function uploadToCloudinary(imageUrl: string): Promise<string> {
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET;
-
   if (!cloudName || !uploadPreset) {
     console.warn("Cloudinary config tidak lengkap – mengembalikan URL asli.");
     return imageUrl;
   }
-
   try {
     const res = await fetch(
       `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
@@ -118,54 +112,40 @@ async function uploadToCloudinary(imageUrl: string): Promise<string> {
         }),
       }
     );
-    const data = await res.json();
-    if (!data.secure_url) {
-      console.error("Cloudinary upload gagal:", data);
-      return imageUrl;
-    }
-    return data.secure_url;
+    const data = (await res.json()) as { secure_url?: string };
+    return data.secure_url || imageUrl;
   } catch (err) {
     console.error("Cloudinary upload error:", err);
     return imageUrl;
   }
 }
 
-// ---------- RESOLVE IMAGE ----------
 async function resolveImage(
   keyword: string,
   userImage?: string,
   fallbackImage?: string
 ): Promise<string> {
-  // user upload
   if (userImage) {
     const uploaded = await uploadToCloudinary(userImage);
     return optimizeCloudinary(uploaded);
   }
-
   const pexels = await searchPexels(keyword);
   if (pexels) {
     const uploaded = await uploadToCloudinary(pexels);
     return optimizeCloudinary(uploaded);
   }
-
   const wiki = await searchWikimedia(keyword);
   if (wiki) {
     const uploaded = await uploadToCloudinary(wiki);
     return optimizeCloudinary(uploaded);
   }
-
   return optimizeCloudinary(fallbackImage || DEFAULT_IMAGE);
 }
 
-// ---------- MAIN RENDER ----------
 export async function render(data: LandingPageData): Promise<string> {
-  // Validasi environment variables di awal (opsional, bisa juga di masing-masing fungsi)
-  if (!process.env.PEXELS_API_KEY) {
-    console.warn("[modern.ts] PEXELS_API_KEY kosong. Gambar dari Pexels tidak akan tersedia.");
-  }
-  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_UPLOAD_PRESET) {
-    console.warn("[modern.ts] CLOUDINARY config kurang. Upload ke Cloudinary akan dilewati.");
-  }
+  if (!process.env.PEXELS_API_KEY) console.warn("[modern.ts] PEXELS_API_KEY kosong.");
+  if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_UPLOAD_PRESET)
+    console.warn("[modern.ts] Cloudinary config kurang.");
 
   const image = await resolveImage(
     data.headline || "product",
@@ -173,19 +153,23 @@ export async function render(data: LandingPageData): Promise<string> {
     data.fallbackImage
   );
 
-  // Sanitasi semua string yang masuk ke HTML
   const headline = escapeHtml(data.headline || "Landing Page Modern");
   const subheadline = escapeHtml(data.subheadline || "Landing page otomatis dengan AI");
   const badge = escapeHtml(data.badge || "🔥 Promo Hari Ini");
   const featureTitle = escapeHtml(data.featureTitle || "Kenapa Banyak Yang Pilih Ini?");
   const testimonialTitle = escapeHtml(data.testimonialTitle || "Testimoni Customer");
   const ctaTitle = escapeHtml(data.ctaTitle || "Siap Order Sekarang?");
-  const ctaDescription = escapeHtml(data.ctaDescription || "Dapatkan promo spesial hari ini sebelum kehabisan.");
+  const ctaDescription = escapeHtml(
+    data.ctaDescription || "Dapatkan promo spesial hari ini sebelum kehabisan."
+  );
   const ctaText = escapeHtml(data.cta || "Pesan Sekarang");
   const ctaLink = escapeHtml(data.ctaLink || "#");
 
   const featuresHtml = (data.features || [])
-    .map((f) => `<div class="feature"><div class="icon">✓</div><p>${escapeHtml(f)}</p></div>`)
+    .map(
+      (f) =>
+        `<div class="feature"><div class="icon">✓</div><p>${escapeHtml(f)}</p></div>`
+    )
     .join("");
 
   const testimonialsHtml = (data.testimonials || [])
