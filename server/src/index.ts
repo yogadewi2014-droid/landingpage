@@ -1,8 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import prisma from './lib/prisma';                        // ← Prisma client
-import { renderTemplate } from './services/template-engine/renderer'; // ← Template engine
+import prisma from './lib/prisma';
+import { renderTemplate } from './services/template-engine/renderer';
 
 // ─── Konfigurasi Awal ───────────────────────────────────
 dotenv.config();
@@ -32,7 +32,7 @@ app.get('/api/hello', (_req: Request, res: Response) => {
   res.json({ hello: 'world' });
 });
 
-// ─── ROUTE: Generate Landing Page (NYATA) ──────────────
+// ─── ROUTE: Generate Landing Page ──────────────────────
 app.post('/api/pages/generate', async (req: Request, res: Response) => {
   try {
     const {
@@ -96,6 +96,39 @@ app.post('/api/pages/generate', async (req: Request, res: Response) => {
   }
 });
 
+// ─── ROUTE: Ambil Daftar Landing Page ─────────────────
+app.get('/api/pages', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.query;
+    const pages = await prisma.page.findMany({
+      where: { userId: userId as string },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ pages });
+  } catch (error) {
+    console.error('Error fetching pages:', error);
+    res.status(500).json({ error: 'Gagal mengambil daftar halaman' });
+  }
+});
+
+// ─── ROUTE: Ambil HTML Halaman Publik ─────────────────
+app.get('/api/pages/:slug/html', async (req: Request, res: Response) => {
+  try {
+    const { slug } = req.params;
+    const page = await prisma.page.findUnique({ where: { slug } });
+
+    if (!page) {
+      return res.status(404).json({ error: 'Halaman tidak ditemukan' });
+    }
+
+    const html = renderTemplate(page.template, page.data as any);
+    res.json({ html, slug: page.slug });
+  } catch (error) {
+    console.error('Error fetching page:', error);
+    res.status(500).json({ error: 'Gagal mengambil halaman' });
+  }
+});
+
 // ─── ROUTE: Login / Auth Placeholder ───────────────────
 app.post('/api/auth/login', async (req: Request, res: Response) => {
   res.json({ message: 'Login endpoint (belum diimplementasikan)' });
@@ -106,34 +139,6 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Server error:', err.message);
   res.status(500).json({ error: 'Terjadi kesalahan pada server' });
 });
-app.get('/health', (_req, res) => {
-  res.status(200).send('OK');
-});
-app.get('/api/pages/:slug/html', async (req: Request, res: Response) => {
-  try {
-    const { slug } = req.params;
-    const page = await prisma.page.findUnique({ where: { slug } });
-    if (!page) return res.status(404).json({ error: 'Halaman tidak ditemukan' });
-
-    // Data sudah disimpan di kolom `data`, kita oper sebagai object
-    const html = renderTemplate(page.template, page.data as any);
-    res.json({ html, slug: page.slug });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Gagal mengambil halaman' });
-  }
-});
-
-// Tambahkan juga endpoint GET /api/pages (untuk daftar)
-app.get('/api/pages', async (req: Request, res: Response) => {
-  const { userId } = req.query;
-  const pages = await prisma.page.findMany({
-    where: { userId: userId as string },
-    orderBy: { createdAt: 'desc' },
-  });
-  res.json({ pages });
-});
-
 
 // ─── Jalankan Server ────────────────────────────────────
 app.listen(PORT, () => {
