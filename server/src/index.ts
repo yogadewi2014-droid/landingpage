@@ -46,29 +46,25 @@ app.post('/api/pages/generate', async (req: Request, res: Response) => {
       image,
     } = req.body;
 
-    // Validasi sederhana
     if (!title && !headline) {
       return res.status(400).json({ error: 'Judul atau headline wajib diisi' });
     }
 
-    // Buat slug dari judul
     const baseSlug = (title || headline)
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
     const slug = `${baseSlug}-${Date.now()}`;
 
-    // Data halaman
     const pageData = {
       headline: headline || title,
       subheadline: subheadline || 'Solusi terbaik untuk Anda',
       cta: cta || 'Hubungi Sekarang',
       features: features || ['Mudah', 'Cepat', 'Profesional'],
       image: image || 'https://via.placeholder.com/400x300',
-      watermark: true, // nanti diatur berdasarkan paket user
+      watermark: true,
     };
 
-    // Simpan ke database
     const page = await prisma.page.create({
       data: {
         userId,
@@ -79,10 +75,8 @@ app.post('/api/pages/generate', async (req: Request, res: Response) => {
       },
     });
 
-    // Render HTML menggunakan template engine
     const html = renderTemplate(template, pageData);
 
-    // Respons sukses
     res.status(201).json({
       success: true,
       pageId: page.id,
@@ -96,12 +90,15 @@ app.post('/api/pages/generate', async (req: Request, res: Response) => {
   }
 });
 
-// ─── ROUTE: Ambil Daftar Landing Page ─────────────────
+// ─── ROUTE: Ambil Daftar Landing Page (diperbaiki) ─────
 app.get('/api/pages', async (req: Request, res: Response) => {
   try {
-    const { userId } = req.query;
+    // Type guard: pastikan userId berupa string tunggal
+    const userIdRaw = req.query.userId;
+    const userIdValue = Array.isArray(userIdRaw) ? userIdRaw[0] : userIdRaw;
+
     const pages = await prisma.page.findMany({
-      where: { userId: userId as string },
+      where: { userId: userIdValue },
       orderBy: { createdAt: 'desc' },
     });
     res.json({ pages });
@@ -129,7 +126,7 @@ app.get('/api/pages/:slug/html', async (req: Request, res: Response) => {
   }
 });
 
-// ─── ROUTE: Login / Auth Placeholder ───────────────────
+// ─── ROUTE: Auth Placeholder ────────────────────────────
 app.post('/api/auth/login', async (req: Request, res: Response) => {
   res.json({ message: 'Login endpoint (belum diimplementasikan)' });
 });
