@@ -90,14 +90,14 @@ app.post('/api/pages/generate', async (req: Request, res: Response) => {
   }
 });
 
-// ─── ROUTE: Ambil Daftar Landing Page (TYPE ERROR FIXED) ──
+// ─── ROUTE: Ambil Daftar Landing Page (TYPE FIXED) ─────
 app.get('/api/pages', async (req: Request, res: Response) => {
   try {
     const userIdRaw = req.query.userId;
-    // Ambil string pertama jika array, jika tidak, biarkan
+    // Ambil elemen pertama jika array, kalau bukan biarkan
     const userIdValue = Array.isArray(userIdRaw) ? userIdRaw[0] : userIdRaw;
-    // Pastikan hanya string yang diterima Prisma
-    const safeUserId = typeof userIdValue === 'string' ? userIdValue : undefined;
+    // Type assertion aman: sudah kita validasi
+    const safeUserId = userIdValue as string | undefined;
 
     const pages = await prisma.page.findMany({
       where: { userId: safeUserId },
