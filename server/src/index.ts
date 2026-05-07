@@ -4,18 +4,6 @@ import cors from 'cors';
 import prisma from './lib/prisma';
 import { renderTemplate } from './services/template-engine/renderer';
 
-// ─── Helper: Ambil satu nilai string dari query parameter ─────
-function getSingleQueryParam(value: unknown): string | undefined {
-  if (Array.isArray(value)) {
-    // Ambil elemen pertama jika array
-    return typeof value[0] === 'string' ? value[0] : undefined;
-  }
-  if (typeof value === 'string') {
-    return value;
-  }
-  return undefined;
-}
-
 // ─── Konfigurasi Awal ───────────────────────────────────
 dotenv.config();
 
@@ -102,13 +90,15 @@ app.post('/api/pages/generate', async (req: Request, res: Response) => {
   }
 });
 
-// ─── ROUTE: Ambil Daftar Landing Page (FIXED) ──────────
+// ─── ROUTE: Ambil Daftar Landing Page (TYPE ERROR FIXED PERMANENTLY) ──
 app.get('/api/pages', async (req: Request, res: Response) => {
   try {
-    const userId = getSingleQueryParam(req.query.userId);
+    const raw = req.query.userId;
+    // Ambil nilai pertama jika array, jika bukan string kosongkan
+    const userId: string | undefined = Array.isArray(raw) ? raw[0] : (typeof raw === 'string' ? raw : undefined);
 
     const pages = await prisma.page.findMany({
-      where: { userId },   // userId bertipe string | undefined (aman)
+      where: { userId },
       orderBy: { createdAt: 'desc' },
     });
     res.json({ pages });
