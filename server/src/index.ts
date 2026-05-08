@@ -11,7 +11,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || true,
+  credentials: true
+}));
 app.use(express.json());
 app.use((req, _res, next) => {
   console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
@@ -19,6 +22,10 @@ app.use((req, _res, next) => {
 });
 
 // Health Check
+app.get("/health", (_req: Request, res: Response) => {
+  res.status(200).json({ ok: true });
+});
+
 app.get("/", (_req: Request, res: Response) => {
   res.json({
     message: "CBLZ Landing Page Builder API 🚀",

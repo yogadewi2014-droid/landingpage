@@ -1,6 +1,7 @@
 {
   "name": "cblz-landing-builder",
   "private": true,
+  "packageManager": "pnpm@9.15.0",
   "scripts": {
     "dev:web": "pnpm --filter web dev",
     "dev:server": "pnpm --filter server dev",
@@ -8,7 +9,7 @@
     "build:server": "pnpm --filter server build",
     "start:web": "pnpm --filter web start",
     "start:server": "pnpm --filter server start",
-    "db:push": "pnpm --filter server db:push",
+    "db:push": "pnpm --filter server prisma:push",
     "db:studio": "pnpm --filter server db:studio"
   },
   "engines": {
