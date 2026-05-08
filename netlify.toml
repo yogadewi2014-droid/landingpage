@@ -1,6 +1,0 @@
-[build]
-  base = "web"
-  command = "cd .. && pnpm install && pnpm --filter web build"
-
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
